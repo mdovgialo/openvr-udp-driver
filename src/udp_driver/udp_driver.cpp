@@ -52,7 +52,7 @@ inline void HmdMatrix_SetIdentity( HmdMatrix34_t *pMatrix )
 
 
 // keys for use with the settings API
-static const char * const k_pch_Sample_Section = "driver_sample";
+static const char * const k_pch_Sample_Section = "udp_sample";
 static const char * const k_pch_Sample_SerialNumber_String = "serialNumber";
 static const char * const k_pch_Sample_ModelNumber_String = "modelNumber";
 static const char * const k_pch_Sample_WindowX_Int32 = "windowX";
@@ -148,14 +148,19 @@ void CWatchdogDriver_Sample::Cleanup()
 class CUdpControllerDriver : public vr::ITrackedDeviceServerDriver
 {
 public:
-	CUdpControllerDriver()
+	CUdpControllerDriver(boolean left)
 	{
 		m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
 		m_ulPropertyContainer = vr::k_ulInvalidPropertyContainer;
 
-		m_sSerialNumber = "CTRL_1234";
+		if (left) {
+			m_sSerialNumber = "UDP_LEFT";
+		}
+		else {
+			m_sSerialNumber = "UDP_RIGHT";
+		}
 
-		m_sModelNumber = "MyController";
+		m_sModelNumber = "UDP_CONTROLLER";
 	}
 
 	virtual ~CUdpControllerDriver()
@@ -312,8 +317,8 @@ EVRInitError UdpControllerDriver::Init( vr::IVRDriverContext *pDriverContext )
 	VR_INIT_SERVER_DRIVER_CONTEXT( pDriverContext );
 	InitDriverLog( vr::VRDriverLog() );
 
-	m_pController_l = new CUdpControllerDriver();
-	m_pController_r = new CUdpControllerDriver();
+	m_pController_l = new CUdpControllerDriver(true);
+	m_pController_r = new CUdpControllerDriver(false);
 	vr::VRServerDriverHost()->TrackedDeviceAdded( m_pController_l->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pController_l);
 	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pController_r->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pController_r);
 
