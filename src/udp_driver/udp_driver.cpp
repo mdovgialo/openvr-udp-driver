@@ -145,10 +145,10 @@ void CWatchdogDriver_Sample::Cleanup()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-class CSampleControllerDriver : public vr::ITrackedDeviceServerDriver
+class CUdpControllerDriver : public vr::ITrackedDeviceServerDriver
 {
 public:
-	CSampleControllerDriver()
+	CUdpControllerDriver()
 	{
 		m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
 		m_ulPropertyContainer = vr::k_ulInvalidPropertyContainer;
@@ -158,7 +158,7 @@ public:
 		m_sModelNumber = "MyController";
 	}
 
-	virtual ~CSampleControllerDriver()
+	virtual ~CUdpControllerDriver()
 	{
 	}
 
@@ -288,7 +288,7 @@ private:
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-class CServerDriver_Sample: public IServerTrackedDeviceProvider
+class UdpControllerDriver: public IServerTrackedDeviceProvider
 {
 public:
 	virtual EVRInitError Init( vr::IVRDriverContext *pDriverContext ) ;
@@ -300,54 +300,59 @@ public:
 	virtual void LeaveStandby()  {}
 
 private:
-	CSampleDeviceDriver *m_pNullHmdLatest = nullptr;
-	CSampleControllerDriver *m_pController = nullptr;
+	CUdpControllerDriver *m_pController_l = nullptr;
+	CUdpControllerDriver *m_pController_r = nullptr;
 };
 
-CServerDriver_Sample g_serverDriverNull;
+UdpControllerDriver g_serverDriverNull;
 
 
-EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
+EVRInitError UdpControllerDriver::Init( vr::IVRDriverContext *pDriverContext )
 {
 	VR_INIT_SERVER_DRIVER_CONTEXT( pDriverContext );
 	InitDriverLog( vr::VRDriverLog() );
 
-	m_pNullHmdLatest = new CSampleDeviceDriver();
-	vr::VRServerDriverHost()->TrackedDeviceAdded( m_pNullHmdLatest->GetSerialNumber().c_str(), vr::TrackedDeviceClass_HMD, m_pNullHmdLatest );
-
-	m_pController = new CSampleControllerDriver();
-	vr::VRServerDriverHost()->TrackedDeviceAdded( m_pController->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pController );
+	m_pController_l = new CUdpControllerDriver();
+	m_pController_r = new CUdpControllerDriver();
+	vr::VRServerDriverHost()->TrackedDeviceAdded( m_pController_l->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pController_l);
+	vr::VRServerDriverHost()->TrackedDeviceAdded(m_pController_r->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pController_r);
 
 	return VRInitError_None;
 }
 
-void CServerDriver_Sample::Cleanup() 
+void UdpControllerDriver::Cleanup() 
 {
 	CleanupDriverLog();
-	delete m_pNullHmdLatest;
-	m_pNullHmdLatest = NULL;
-	delete m_pController;
-	m_pController = NULL;
+	delete m_pController_l;
+	delete m_pController_r;
+	m_pController_r = NULL;
+	m_pController_l = NULL;
 }
 
 
-void CServerDriver_Sample::RunFrame()
+void UdpControllerDriver::RunFrame()
 {
-	if ( m_pNullHmdLatest )
+	if ( m_pController_l )
 	{
-		m_pNullHmdLatest->RunFrame();
+		m_pController_l->RunFrame();
 	}
-	if ( m_pController )
+
+	if (m_pController_r)
 	{
-		m_pController->RunFrame();
+		m_pController_r->RunFrame();
 	}
 
 	vr::VREvent_t vrEvent;
 	while ( vr::VRServerDriverHost()->PollNextEvent( &vrEvent, sizeof( vrEvent ) ) )
 	{
-		if ( m_pController )
+		if ( m_pController_l )
 		{
-			m_pController->ProcessEvent( vrEvent );
+			m_pController_l->ProcessEvent( vrEvent );
+		}
+
+		if (m_pController_r)
+		{
+			m_pController_r->ProcessEvent(vrEvent);
 		}
 	}
 }
