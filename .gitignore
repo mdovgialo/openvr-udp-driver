@@ -1,2 +1,4 @@
 openvr-master
 .vs
+src/udp_driver/x64/
+src/udp_driver/bin/
